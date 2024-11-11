@@ -66,3 +66,5 @@ ros2 service call /spawn_entity 'gazebo_msgs/SpawnEntity' '{name: "sdf_ball", xm
 </sdf>
 
     // 替换模型名称、半径和高度 需要多次进行，每一个都设置一遍
+
+gazebo world文件地址：/home/yaozhuo/software/gazebo/warehouse.world

@@ -58,8 +58,8 @@ void createCylinderSDFFile(const std::string& model_name, const std::string& fil
     if (pos != std::string::npos) {
         sdf_content.replace(pos, std::string("{height2}").length(), std::to_string(height));
     }
-    
-    std::cout << " sdf_content = " << sdf_content << std::endl;
+
+    // std::cout << " sdf_content = " << sdf_content << std::endl;
 
     // 将SDF内容写入文件
     std::ofstream sdf_file(file_path);
@@ -79,41 +79,34 @@ std::string loadSDFFile(const std::string& file_path) {
     return sdf_buffer.str();
 }
 
-int main(int argc, char ** argv) {
-    // 生成带圆柱体的SDF文件
-    std::string model_name = "cylinder_robot";
+std::string createCircleAgent(const std::string& model_name, double radius, double height) {
     std::string file_path = "/tmp/fake_large_agents/" + model_name + ".sdf";
-    double radius = 2.3;  // 圆柱体半径
-    double height = 1.0;  // 圆柱体高度
-
     createCylinderSDFFile(model_name, file_path, radius, height);
+    return file_path;
+}
 
-        // 初始化ROS 2节点
-    rclcpp::init(argc, argv);
-    auto node = rclcpp::Node::make_shared("spawn_sdf_model");
+typedef rclcpp::Client<gazebo_msgs::srv::SpawnEntity>::SharedPtr SpawnClientPtr;
 
-    // 创建服务客户端
-    auto client = node->create_client<gazebo_msgs::srv::SpawnEntity>("/spawn_entity");
+bool spawnAgentGazebo(const std::string& file_path, const std::string model_name, 
+                      const geometry_msgs::msg::Pose& initial_pose, 
+                      const SpawnClientPtr& client, const rclcpp::Node::SharedPtr& node) {
+
 
     // 读取SDF文件内容
     std::string model_xml = loadSDFFile(file_path);
-
     // 创建SpawnEntity请求
     auto request = std::make_shared<gazebo_msgs::srv::SpawnEntity::Request>();
     request->name = model_name;              // 设置模型名称
     request->xml = model_xml;                // SDF文件内容
     request->robot_namespace = "";           // 机器人命名空间，可留空
-    request->initial_pose.position.x = 0.0;  // 设置模型初始位置
-    request->initial_pose.position.y = 0.0;
-    request->initial_pose.position.z = 0.5;
-    request->initial_pose.orientation.w = 1.0;
+    request->initial_pose = initial_pose;    // 设置模型初始位置
     request->reference_frame = "world";      // 设置参考坐标系
 
     // 等待服务启动
     while (!client->wait_for_service(std::chrono::seconds(1))) {
         if (!rclcpp::ok()) {
             RCLCPP_ERROR(node->get_logger(), "Interrupted while waiting for the service. Exiting.");
-            return 1;
+            return false;
         }
         RCLCPP_INFO(node->get_logger(), "Waiting for /spawn_entity service to be available...");
     }
@@ -124,14 +117,41 @@ int main(int argc, char ** argv) {
         RCLCPP_INFO(node->get_logger(), "Successfully spawned model: %s", model_name.c_str());
     } else {
         RCLCPP_ERROR(node->get_logger(), "Failed to spawn model: %s", model_name.c_str());
+        return false;
     }
+    return true;
+}
+
+int main(int argc, char ** argv) {
+
+    // 初始化ROS 2节点
+    rclcpp::init(argc, argv);
+    auto node = rclcpp::Node::make_shared("spawn_sdf_model");
+
+    // 创建服务客户端
+    rclcpp::Client<gazebo_msgs::srv::SpawnEntity>::SharedPtr client =
+                node->create_client<gazebo_msgs::srv::SpawnEntity>("/spawn_entity");
+
+    geometry_msgs::msg::Pose initial_pose;
+    initial_pose.position.x = 0.0;  // 设置模型初始位置
+    initial_pose.position.y = 0.0;
+    initial_pose.position.z = 0.5;
+    initial_pose.orientation.w = 1.0;
+
+    // 生成带圆柱体的SDF文件
+    std::string file_path = createCircleAgent(std::string("cylinder_robot1"), .3, .7);
+    spawnAgentGazebo(file_path, std::string("cylinder_robot1"), initial_pose, client, node);
+
+    // 生成带圆柱体的SDF文件
+    initial_pose.position.x = 1.0;  // 设置模型初始位置
+    initial_pose.position.y = 2.0;
+    initial_pose.position.z = 0.5;
+
+    std::string file_path2 = createCircleAgent(std::string("cylinder_robot2"), .5, .3);
+    spawnAgentGazebo(file_path2, std::string("cylinder_robot2"), initial_pose, client, node);
 
     // 关闭ROS 2
     rclcpp::shutdown();
-
-    // char* cmd_string = "ros2 service call /spawn_entity 'gazebo_msgs/SpawnEntity' '{name: \"sdf_ball\", xml: \"<?xml version=\"1.0\" \?><sdf version=\"1.5\"><model name=\"will_be_ignored\"><static>true</static><link name=\"link\"><visual name=\"visual\"><geometry><sphere><radius>1.0</radius></sphere></geometry></visual></link></model></sdf>\"}'";
-
-    // std::system(cmd_string);
 
     return 0;
 
