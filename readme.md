@@ -68,3 +68,29 @@ ros2 service call /spawn_entity 'gazebo_msgs/SpawnEntity' '{name: "sdf_ball", xm
     // 替换模型名称、半径和高度 需要多次进行，每一个都设置一遍
 
 gazebo world文件地址：/home/yaozhuo/software/gazebo/warehouse.world
+
+
+    <?xml version ?>  xml的版本
+    <sdf version>  sdf的版本，和config里<sdf>的版本要一样呀
+    <model name> 模型的名字
+    <pose> 在世界中的位置 x y z pitch yaw roll
+    <static> 选择模型是否固定
+    <link>链接 包含模型的一个主体的物理属性，尽量减少模型中链接数量以提高性能和稳定
+    <collision>: 用于碰撞检查，一个link可以有多个碰撞元素
+    <geometry> 物体
+    <box> | <sphere> | <cylinder>形状名字
+    <size> x y z长度 | <radius>半径 | <radius> & <length>
+    <surface> 平面
+    <friction>设置地面摩擦力
+    <ode> <mu> <slip>
+    <visual>: 可视化
+    <geometry> 几何形状
+    <box>形状名字
+    <size> x y z长度
+    <inertial>: 惯性元素，描述了link的动态特性，例如质量和转动惯量矩阵
+    <mass> 质量
+    <inertia> ！！！注意这两单词不一样呀
+    <sensor>: 从world收集数据用于plugin
+    <light>: 光源
+    <joint>关节 关节连接两个link，用于旋转轴和关节限制等
+    <plugin>插件  用于控制模型

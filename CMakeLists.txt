@@ -68,6 +68,9 @@ add_executable(lamapf_planner_node src/lamapf_planner.cpp)
 #   $<INSTALL_INTERFACE:include>)
 target_link_libraries(lamapf_planner_node ${EXTERNAL_LIBS} )
 install(TARGETS lamapf_planner_node DESTINATION lib/${PROJECT_NAME})
+ament_target_dependencies(lamapf_planner_node
+  ${dependencies}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

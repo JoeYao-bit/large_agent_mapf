@@ -2,8 +2,8 @@
 // Created by yaozhuo on 2024/6/28.
 //
 
-#ifndef LAYEREDMAPF_COMMON_INTERFACES_H
-#define LAYEREDMAPF_COMMON_INTERFACES_H
+#ifndef EXE_COMMON_INTERFACES_H
+#define EXE_COMMON_INTERFACES_H
 #pragma once
 #include <gtest/gtest.h>
 #include <sstream>

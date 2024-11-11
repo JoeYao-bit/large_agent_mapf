@@ -10,11 +10,15 @@
 #include "LA-MAPF/algorithm/LA-MAPF/CBS/layered_large_agent_CBS.h"
 #include "LA-MAPF/algorithm/LA-MAPF/CBS/large_agent_CBS.h"
 
+#include "fake_agents.h"
 //#include "../../algorithm/LA-MAPF/LaCAM/large_agent_lacam.h"
 
 using namespace freeNav::LayeredMAPF::LA_MAPF;
 
-void layeredLargeAgentMAPFTest(const std::string& file_path) {
+void layeredLargeAgentMAPFTest(const std::string& file_path, 
+                               const SpawnClientPtr& client, 
+                               const rclcpp::Node::SharedPtr& node) {
+
     InstanceDeserializer<2> deserializer;
     if (deserializer.loadInstanceFromFile(file_path, dim)) {
         std::cout << "load from path " << file_path << " success" << std::endl;
@@ -30,6 +34,42 @@ void layeredLargeAgentMAPFTest(const std::string& file_path) {
     std::vector<std::vector<int> > grid_visit_count_table;
 
     auto instances = deserializer.getTestInstance({40}, 1);
+
+
+    // add instance to gazebo
+    geometry_msgs::msg::Pose initial_pose;
+    initial_pose.position.x = 0.0;  // 设置模型初始位置
+    initial_pose.position.y = 0.0;
+    initial_pose.position.z = 0.5;
+    initial_pose.orientation.w = 1.0;
+    for (int id=0; id<instances.front().first.size(); id++) {
+        const auto& agent = instances.front().first[id];
+        const auto& start_pt = instances.front().second[id].first.pt_; 
+        if(agent->type_ == "Circle") {
+
+            auto circle_agent_ptr = std::dynamic_pointer_cast<CircleAgent<2> >(agent);
+            std::string file_path2 = createCircleAgent(std::string("Circle_")+std::to_string(agent->id_), 
+                                                       circle_agent_ptr->radius_*0.05, .4);
+
+            initial_pose.position.x = 0.05*start_pt[0];  // 设置模型初始位置
+            initial_pose.position.y = 0.05*start_pt[1];
+
+            spawnAgentGazebo(file_path2, std::string("Circle_")+std::to_string(agent->id_), initial_pose, client, node);
+
+        } else if(agent->type_ == "Block_2D") {
+
+            auto block_agent_ptr = std::dynamic_pointer_cast<BlockAgent_2D>(agent);
+            std::string file_path3 = createBlockAgent(std::string("Block_2D_")+std::to_string(agent->id_), 
+                                                      {block_agent_ptr->min_pt_[0]*0.05, block_agent_ptr->min_pt_[1]*0.05},
+                                                      {block_agent_ptr->max_pt_[0]*0.05, block_agent_ptr->max_pt_[1]*0.05}, .3);
+
+            initial_pose.position.x = 0.05*start_pt[0];  // 设置模型初始位置
+            initial_pose.position.y = 0.05*start_pt[1];
+
+            spawnAgentGazebo(file_path3, std::string("Block_2D_")+std::to_string(agent->id_), initial_pose, client, node);
+
+        }
+    }
 
     auto layered_paths = layeredLargeAgentMAPF<2>(instances.front().second,
                                                   instances.front().first,
@@ -64,6 +104,16 @@ void layeredLargeAgentMAPFTest(const std::string& file_path) {
 }
 
 int main(int argc, char ** argv) {
-    layeredLargeAgentMAPFTest(map_test_config.at("la_ins_path"));
+
+    // 初始化ROS 2节点
+    rclcpp::init(argc, argv);
+    auto node = rclcpp::Node::make_shared("spawn_sdf_model");
+
+    // 创建服务客户端
+    rclcpp::Client<gazebo_msgs::srv::SpawnEntity>::SharedPtr client =
+                node->create_client<gazebo_msgs::srv::SpawnEntity>("/spawn_entity");
+
+    layeredLargeAgentMAPFTest(map_test_config.at("la_ins_path"), client, node);
+
     return 0;
 }
