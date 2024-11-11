@@ -614,4 +614,184 @@ std::vector<std::set<int> > pickCasesFromScene(int test_count,
 }
 
 
+
+void InstanceVisualization(const std::vector<AgentPtr<2> >& agents,
+                           const std::vector<PosePtr<int, 2> >& all_poses,
+                           const std::vector<InstanceOrient<2> >& instances,
+                           const std::vector<LAMAPF_Path>& solution,
+                           const std::vector<std::vector<int> >& grid_visit_count_table = {}) {
+    zoom_ratio = std::min(2560/dim[0], 1400/dim[1]);
+
+    // visualize instance
+    Canvas canvas("LargeAgentMAPF InstanceGenerator", dim[0], dim[1], .1, zoom_ratio);
+    int time_index = 0;
+
+
+    size_t makespan = getMakeSpan(solution);
+    draw_all_instance = false;
+    while(true) {
+        canvas.resetCanvas();
+        canvas.drawEmptyGrid();
+        canvas.drawGridMap(dim, is_occupied);
+
+        if(draw_full_path) {
+            for(int i=0; i<solution.size(); i++)
+            {
+                const auto& path = solution[i];
+                if(path.empty()) { continue; }
+                for(int t=0; t<path.size()-1; t++) {
+                    Pointi<2> pt1 = all_poses[path[t]]->pt_,
+                            pt2 = all_poses[path[t+1]]->pt_;
+                    canvas.drawLineInt(pt1[0], pt1[1], pt2[0], pt2[1], true, std::max(1, zoom_ratio/10), COLOR_TABLE[(i) % 30]);
+                }
+            }
+        } else {
+            int i = current_subgraph_id;
+            if(!solution.empty()) {
+                //for(int i=0; i<solution.size(); i++)
+                {
+                    const auto &path = solution[i];
+                    if (!path.empty()) {
+                        for (int t = 0; t < path.size() - 1; t++) {
+                            Pointi<2> pt1 = all_poses[path[t]]->pt_,
+                                    pt2 = all_poses[path[t + 1]]->pt_;
+                            canvas.drawLineInt(pt1[0], pt1[1], pt2[0], pt2[1], true, std::max(1, zoom_ratio / 10),
+                                               COLOR_TABLE[(i) % 30]);
+                        }
+                    }
+                }
+            }
+        }
+        if(draw_all_instance) {
+            if(draw_full_path) {
+                for (int i=0; i<instances.size(); i++)
+                {
+                    //const auto &instance = instances[current_subgraph_id]; // zoom_ratio/10
+                    const auto &instance = instances[i]; // zoom_ratio/10
+                    agents[i]->drawOnCanvas(instance.first, canvas, COLOR_TABLE[i%30]);
+
+                    agents[i]->drawOnCanvas(instance.second, canvas, COLOR_TABLE[i%30]);
+
+                    canvas.drawArrowInt(instance.first.pt_[0], instance.first.pt_[1], -orientToPi_2D(instance.first.orient_), 1, std::max(1, zoom_ratio/10));
+                    canvas.drawArrowInt(instance.second.pt_[0], instance.second.pt_[1], -orientToPi_2D(instance.second.orient_) , 1, std::max(1, zoom_ratio/10));
+
+                }
+            } else {
+                const auto &instance = instances[current_subgraph_id]; // zoom_ratio/10
+                agents[current_subgraph_id]->drawOnCanvas(instance.first, canvas, COLOR_TABLE[current_subgraph_id%30]);
+
+                agents[current_subgraph_id]->drawOnCanvas(instance.second, canvas, COLOR_TABLE[current_subgraph_id%30]);
+
+                canvas.drawArrowInt(instance.first.pt_[0], instance.first.pt_[1], -orientToPi_2D(instance.first.orient_), 1, std::max(1, zoom_ratio/10));
+                canvas.drawArrowInt(instance.second.pt_[0], instance.second.pt_[1], -orientToPi_2D(instance.second.orient_) , 1, std::max(1, zoom_ratio/10));
+
+            }
+        }
+        if(draw_path) {
+            if(draw_full_path) {
+                for(int i=0; i<solution.size(); i++)
+                {
+                    const auto &path = solution[i];
+                    if (path.empty()) { continue; }
+                    Pointi<2> pt;
+                    int orient = 0;
+                    if (time_index <= path.size() - 1) {
+                        pt = all_poses[path[time_index]]->pt_;
+                        orient = all_poses[path[time_index]]->orient_;
+                    } else {
+                        pt = all_poses[path.back()]->pt_;
+                        orient = all_poses[path.back()]->orient_;
+                    }
+
+                    agents[i]->drawOnCanvas({pt, orient}, canvas, COLOR_TABLE[(i) % 30]);
+
+                    canvas.drawArrowInt(pt[0], pt[1], -orientToPi_2D(orient), 1, std::max(1, zoom_ratio / 10));
+
+                }
+            } else {
+                int i = current_subgraph_id;
+                if(!solution.empty()) {
+                    const auto &path = solution[i];
+                    if (!path.empty()) {
+                        Pointi<2> pt;
+                        int orient = 0;
+                        if (time_index <= path.size() - 1) {
+                            pt = all_poses[path[time_index]]->pt_;
+                            orient = all_poses[path[time_index]]->orient_;
+                        } else {
+                            pt = all_poses[path.back()]->pt_;
+                            orient = all_poses[path.back()]->orient_;
+                        }
+
+                        agents[i]->drawOnCanvas({pt, orient}, canvas, COLOR_TABLE[(i) % 30]);
+
+                        canvas.drawArrowInt(pt[0], pt[1], -orientToPi_2D(orient), 1, std::max(1, zoom_ratio / 10));
+                    }
+                }
+            }
+        }
+        if(draw_visit_grid_table) {
+            if(!grid_visit_count_table.empty()) {
+                const auto& local_grid_visit_count_table = grid_visit_count_table[current_subgraph_id];
+                if(!local_grid_visit_count_table.empty()){
+                    Id total_index = getTotalIndexOfSpace<2>(dim);
+                    for(int i=0; i<total_index; i++) {
+                        Pointi<2> position = IdToPointi<2>(i, dim);
+                        int value = local_grid_visit_count_table[i];
+                        if(value != 0) {
+                            std::stringstream ss;
+                            ss << value;
+                            canvas.drawTextInt(position[0], position[1], ss.str().c_str(), cv::Vec3b::all(200), .5);
+                        }
+                    }
+                }
+            }
+        }
+        char key = canvas.show(1000);
+        switch (key) {
+            case 'i':
+                draw_all_instance = !draw_all_instance;
+                break;
+            case 'w':
+                current_subgraph_id ++;
+                current_subgraph_id = current_subgraph_id % instances.size();
+                std::cout << "-- switch to subgraph " << current_subgraph_id << std::endl;
+                break;
+            case 's':
+                current_subgraph_id --;
+                current_subgraph_id = (current_subgraph_id + instances.size()) % instances.size();
+                std::cout << "-- switch to subgraph " << current_subgraph_id << std::endl;
+                break;
+            case 'p':
+                draw_path = !draw_path;
+                break;
+            case 'f':
+                draw_full_path = !draw_full_path;
+                break;
+            case 'g':
+                draw_visit_grid_table = !draw_visit_grid_table;
+                break;
+            case 'q':
+                if(makespan > 0) {
+                    time_index = time_index + makespan - 1;
+                    time_index = time_index % makespan;
+                    std::cout << "-- switch to time index = " << time_index << std::endl;
+                }
+                break;
+            case 'e':
+                if(makespan > 0) {
+                    time_index++;
+//                    if(time_index > makespan) {
+//                        time_index = makespan;
+//                    }
+                    time_index = time_index % makespan;
+                    std::cout << "-- switch to time index = " << time_index << std::endl;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+}
+
 #endif //LAYEREDMAPF_COMMON_INTERFACES_H

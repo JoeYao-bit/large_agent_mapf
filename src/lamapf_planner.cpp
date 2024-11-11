@@ -29,7 +29,7 @@ void layeredLargeAgentMAPFTest(const std::string& file_path) {
     LargeAgentMAPFInstanceDecompositionPtr<2> decomposer_ptr = nullptr;
     std::vector<std::vector<int> > grid_visit_count_table;
 
-    auto instances = deserializer.getTestInstance({20}, 1);
+    auto instances = deserializer.getTestInstance({40}, 1);
 
     auto layered_paths = layeredLargeAgentMAPF<2>(instances.front().second,
                                                   instances.front().first,
@@ -59,8 +59,8 @@ void layeredLargeAgentMAPFTest(const std::string& file_path) {
 //    std::cout << (raw_path.size() == deserializer.getAgents().size() ? "success" : "failed")
 //              << " raw large agent mapf in " << time_cost1 << "ms " << std::endl;
 
-    // InstanceVisualization(instances.front().first, decomposer_ptr->getAllPoses(),
-    //                       instances.front().second, layered_paths, grid_visit_count_table);
+    InstanceVisualization(instances.front().first, decomposer_ptr->getAllPoses(),
+                          instances.front().second, layered_paths, grid_visit_count_table);
 }
 
 int main(int argc, char ** argv) {
