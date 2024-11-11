@@ -26,9 +26,11 @@ find_package(OpenCV REQUIRED)
 
 find_package(Boost REQUIRED COMPONENTS thread)
 
-
+find_package(gazebo_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
 include_directories(include 
-                    include/large_agent_mapf)
+                    include/large_agent_mapf
+                    )
 
 set(EXTERNAL_LIBS
         libcanvas_ex.a
@@ -36,6 +38,8 @@ set(EXTERNAL_LIBS
         pthread
         ${OpenCV_LIBS}
         )
+
+set(dependencies gazebo_msgs rclcpp)        
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -54,6 +58,9 @@ add_executable(fake_agents_node src/fake_agents.cpp)
 #   $<INSTALL_INTERFACE:include>)
 target_link_libraries(fake_agents_node ${EXTERNAL_LIBS} )
 install(TARGETS fake_agents_node DESTINATION lib/${PROJECT_NAME})
+ament_target_dependencies(fake_agents_node
+  ${dependencies}
+)
 
 add_executable(lamapf_planner_node src/lamapf_planner.cpp)
 # target_include_directories(lamapf_planner_node PUBLIC
