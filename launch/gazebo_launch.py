@@ -63,7 +63,7 @@ from launch.actions import ExecuteProcess
 
 def generate_launch_description():
 
-    world_file_name = 'warehouse.world'
+    world_file_name = 'empty.world' # warehouse.world
     # file_path = /home/yaozhuo/software/gazebo/PLAN-Carrier-Type-4.world
     world = os.path.join('/home/yaozhuo/software/', 'gazebo', world_file_name)
 

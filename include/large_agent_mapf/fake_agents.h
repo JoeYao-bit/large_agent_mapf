@@ -11,7 +11,8 @@
 
 #include "common_interfaces.h"
 
-void createCylinderSDFFile(const std::string& model_name, const std::string& file_path, double radius, double height) {
+void createCylinderSDFFile(const std::string& model_name, const std::string& file_path, double radius, double height,
+                           cv::Vec3b color = cv::Vec3b::all(0)) {
     // SDF 模板，定义一个带圆柱体的模型
     std::string sdf_content = R"(
 <?xml version="1.0" ?>
@@ -35,6 +36,12 @@ void createCylinderSDFFile(const std::string& model_name, const std::string& fil
             <length>{height2}</length>
           </cylinder>
         </geometry>
+        <material> <!-- Start material -->
+          <ambient>{R} {G} {B} 1</ambient>
+          <diffuse>0.6 0.6 0.6 1</diffuse>
+          <specular>0 0 0 0</specular>
+          <emissive>0 0 0 1</emissive>
+        </material> <!-- End material -->
       </visual>
     </link>
   </model>
@@ -63,6 +70,20 @@ void createCylinderSDFFile(const std::string& model_name, const std::string& fil
         sdf_content.replace(pos, std::string("{height2}").length(), std::to_string(height));
     }
 
+    // 设置颜色
+    //在 OpenCV 中，颜色为 BGR，而不是 RGB
+    pos = sdf_content.find("{R}");
+    if (pos != std::string::npos) {
+        sdf_content.replace(pos, std::string("{R}").length(), std::to_string(color[0]/255.));
+    }
+    pos = sdf_content.find("{G}");
+    if (pos != std::string::npos) {
+        sdf_content.replace(pos, std::string("{G}").length(), std::to_string(color[1]/255.));
+    }
+    pos = sdf_content.find("{B}");
+    if (pos != std::string::npos) {
+        sdf_content.replace(pos, std::string("{B}").length(), std::to_string(color[2]/255.));
+    }
     // std::cout << " sdf_content = " << sdf_content << std::endl;
 
     // 将SDF内容写入文件
@@ -78,7 +99,7 @@ void createCylinderSDFFile(const std::string& model_name, const std::string& fil
 
 void createBlockSDFFile(const std::string& model_name, const std::string& file_path, 
                        const freeNav::Pointf<2>& pt_min, const freeNav::Pointf<2>& pt_max,
-                       double height) {
+                       double height, cv::Vec3b color = cv::Vec3b::all(0)) {
 
     double length = pt_max[0] - pt_min[0];
     double width  = pt_max[1] - pt_min[1];
@@ -104,6 +125,12 @@ void createBlockSDFFile(const std::string& model_name, const std::string& file_p
             <size>{length2} {width2} {height}</size>
           </box>
         </geometry>
+        <material> <!-- Start material -->
+          <ambient>{R} {G} {B} 1</ambient>
+          <diffuse>0.6 0.6 0.6 1</diffuse>
+          <specular>0 0 0 0</specular>
+          <emissive>0 0 0 1</emissive>
+        </material> <!-- End material -->
       </visual>
     </link>
   </model>
@@ -146,6 +173,22 @@ void createBlockSDFFile(const std::string& model_name, const std::string& file_p
     }
     // std::cout << " sdf_content = " << sdf_content << std::endl;
 
+
+    // 设置颜色
+    //在 OpenCV 中，颜色为 BGR，而不是 RGB
+    pos = sdf_content.find("{R}");
+    if (pos != std::string::npos) {
+        sdf_content.replace(pos, std::string("{R}").length(), std::to_string(color[0]/255.));
+    }
+    pos = sdf_content.find("{G}");
+    if (pos != std::string::npos) {
+        sdf_content.replace(pos, std::string("{G}").length(), std::to_string(color[1]/255.));
+    }
+    pos = sdf_content.find("{B}");
+    if (pos != std::string::npos) {
+        sdf_content.replace(pos, std::string("{B}").length(), std::to_string(color[2]/255.));
+    }
+
     // 将SDF内容写入文件
     std::ofstream sdf_file(file_path);
     if (sdf_file.is_open()) {
@@ -164,18 +207,19 @@ std::string loadSDFFile(const std::string& file_path) {
     return sdf_buffer.str();
 }
 
-std::string createCircleAgent(const std::string& model_name, double radius, double height) {
+std::string createCircleAgent(const std::string& model_name, double radius, double height, cv::Vec3b color = cv::Vec3b::all(0)) {
     std::string file_path = "/tmp/fake_large_agents/" + model_name + ".sdf";
-    createCylinderSDFFile(model_name, file_path, radius, height);
+    createCylinderSDFFile(model_name, file_path, radius, height, color);
     return file_path;
 }
 
 std::string createBlockAgent(const std::string& model_name,
                              const freeNav::Pointf<2>& pt_min,
                              const freeNav::Pointf<2>& pt_max,
-                             double height) {
+                             double height,
+                             cv::Vec3b color = cv::Vec3b::all(0)) {
     std::string file_path = "/tmp/fake_large_agents/" + model_name + ".sdf";
-    createBlockSDFFile(model_name, file_path, pt_min, pt_max, height);
+    createBlockSDFFile(model_name, file_path, pt_min, pt_max, height, color);
     return file_path;
 }
 

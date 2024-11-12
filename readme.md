@@ -4,7 +4,7 @@
 运行下述代码启动gazebo以及相关world文件
 
 ```
-ros2 launch large_agent_visualize gazebo_launch.py 
+ros2 launch large_agent_mapf gazebo_launch.py 
 ```
 
 LA-MAPF 和 freeNav-base的头文件安装在/usr/local/include目录，分别来自freeNav和LayeredMAPF
@@ -27,6 +27,7 @@ colcon build --cmake-args -DCMAKE_CXX_FLAGS="-O3"
 使用ROS2 命令行生成一个机器人（运行成功）
 ros2 service call /spawn_entity 'gazebo_msgs/SpawnEntity' '{name: "sdf_ball", xml: "<?xml version=\"1.0\" ?><sdf version=\"1.5\"><model name=\"will_be_ignored\"><static>true</static><link name=\"link\"><visual name=\"visual\"><geometry><sphere><radius>1.0</radius></sphere></geometry></visual></link></model></sdf>"}'
 
+通过代码构造SDF，并存放在/tmp目录下
 
 [gazebo-1] Error [Param.cc:449] Invalid argument. Unable to set value [{radius} ] for key[radius].
 [gazebo-1] Error [parser_urdf.cc:3267] Unable to call parseURDF on robot model

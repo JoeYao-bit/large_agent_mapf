@@ -42,17 +42,36 @@ void layeredLargeAgentMAPFTest(const std::string& file_path,
     initial_pose.position.y = 0.0;
     initial_pose.position.z = 0.5;
     initial_pose.orientation.w = 1.0;
+
+
+    double reso = 0.05;
+    double global_offset_x = -0.5*dim[0]*reso, global_offset_y = -0.5*dim[1]*reso;
+    // add grid map as a big block agent
+    std::string file_path3 = createBlockAgent(std::string("ground"), 
+                                            {-0.5*dim[0]*reso, -0.5*dim[1]*reso},
+                                            { 0.5*dim[0]*reso,  0.5*dim[1]*reso}, .05, cv::Vec3b::all(250));
+
+    initial_pose.position.x = 0;  // 设置模型初始位置
+    initial_pose.position.y = 0;
+    initial_pose.position.z = 0;
+
+    spawnAgentGazebo(file_path3, std::string("ground"), initial_pose, client, node);
+
+
+    // add agent to gazebo
     for (int id=0; id<instances.front().first.size(); id++) {
         const auto& agent = instances.front().first[id];
         const auto& start_pt = instances.front().second[id].first.pt_; 
+        auto color = COLOR_TABLE[id%30];
         if(agent->type_ == "Circle") {
 
             auto circle_agent_ptr = std::dynamic_pointer_cast<CircleAgent<2> >(agent);
             std::string file_path2 = createCircleAgent(std::string("Circle_")+std::to_string(agent->id_), 
-                                                       circle_agent_ptr->radius_*0.05, .4);
+                                                       circle_agent_ptr->radius_*reso, .1, color);
 
-            initial_pose.position.x = 0.05*start_pt[0];  // 设置模型初始位置
-            initial_pose.position.y = 0.05*start_pt[1];
+            initial_pose.position.x = global_offset_x + reso*start_pt[0];  // 设置模型初始位置
+            initial_pose.position.y = global_offset_y + reso*start_pt[1];
+            initial_pose.position.z = .5;
 
             spawnAgentGazebo(file_path2, std::string("Circle_")+std::to_string(agent->id_), initial_pose, client, node);
 
@@ -60,17 +79,34 @@ void layeredLargeAgentMAPFTest(const std::string& file_path,
 
             auto block_agent_ptr = std::dynamic_pointer_cast<BlockAgent_2D>(agent);
             std::string file_path3 = createBlockAgent(std::string("Block_2D_")+std::to_string(agent->id_), 
-                                                      {block_agent_ptr->min_pt_[0]*0.05, block_agent_ptr->min_pt_[1]*0.05},
-                                                      {block_agent_ptr->max_pt_[0]*0.05, block_agent_ptr->max_pt_[1]*0.05}, .3);
+                                                      {block_agent_ptr->min_pt_[0]*reso, block_agent_ptr->min_pt_[1]*reso},
+                                                      {block_agent_ptr->max_pt_[0]*reso, block_agent_ptr->max_pt_[1]*reso}, .1, color);
 
-            initial_pose.position.x = 0.05*start_pt[0];  // 设置模型初始位置
-            initial_pose.position.y = 0.05*start_pt[1];
+            initial_pose.position.x = global_offset_x + reso*start_pt[0];  // 设置模型初始位置
+            initial_pose.position.y = global_offset_y + reso*start_pt[1];
+            initial_pose.position.z = .5;
 
             spawnAgentGazebo(file_path3, std::string("Block_2D_")+std::to_string(agent->id_), initial_pose, client, node);
 
         }
     }
+    // add gridmap to gazebo， as object is too slow, should add them as picture
+    // for(int x=0; x<dim[0]; x++) {
+    //     for(int y=0; y<dim[1]; y++) {
+    //         if(is_occupied({x, y})) {
+    //             // draw occupied grid
+    //             int id = x + y * dim[0];
+    //             std::string file_path3 = createBlockAgent(std::string("grid_")+std::to_string(id), 
+    //                                                     {-0.5*reso, -0.5*reso},
+    //                                                     { 0.5*reso,  0.5*reso}, .1, cv::Vec3b::all(150));
 
+    //             initial_pose.position.x = global_offset_x + reso*x;  // 设置模型初始位置
+    //             initial_pose.position.y = global_offset_y + reso*y;
+
+    //             spawnAgentGazebo(file_path3, std::string("grid_")+std::to_string(id), initial_pose, client, node);
+    //         }
+    //     }
+    // }
     auto layered_paths = layeredLargeAgentMAPF<2>(instances.front().second,
                                                   instances.front().first,
                                                   dim, is_occupied,
@@ -99,8 +135,8 @@ void layeredLargeAgentMAPFTest(const std::string& file_path,
 //    std::cout << (raw_path.size() == deserializer.getAgents().size() ? "success" : "failed")
 //              << " raw large agent mapf in " << time_cost1 << "ms " << std::endl;
 
-    InstanceVisualization(instances.front().first, decomposer_ptr->getAllPoses(),
-                          instances.front().second, layered_paths, grid_visit_count_table);
+    // InstanceVisualization(instances.front().first, decomposer_ptr->getAllPoses(),
+    //                       instances.front().second, layered_paths, grid_visit_count_table);
 }
 
 int main(int argc, char ** argv) {
