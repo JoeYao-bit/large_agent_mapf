@@ -26,6 +26,8 @@
 #include "LA-MAPF/algorithm/LA-MAPF/laryered_large_agent_mapf.h"
 #include "freeNav-base/dependencies/memory_analysis.h"
 
+#include <tf2/LinearMath/Quaternion.h>
+
 using namespace freeNav;
 using namespace freeNav::LayeredMAPF;
 using namespace freeNav::LayeredMAPF::LA_MAPF;
@@ -792,6 +794,30 @@ void InstanceVisualization(const std::vector<AgentPtr<2> >& agents,
                 break;
         }
     }
+}
+
+double orientToRadius(const int& orient) {
+    double retv = 0;
+    switch (orient)
+    {
+        case 0:
+            retv = 0; // 0 degree
+            break;
+        case 1:
+            retv = M_PI; // 180 degree
+            break;
+        case 2:
+            retv = 0.5*M_PI; // 90 degree
+            break;
+        case 3:
+            retv = 1.5*M_PI; // 270 degree
+            break;                   
+        default:
+            std::cout << "ERROR: invalid orient = " << orient << std::endl;
+            exit(1);
+            break;
+    }
+    return retv;
 }
 
 #endif //LAYEREDMAPF_COMMON_INTERFACES_H

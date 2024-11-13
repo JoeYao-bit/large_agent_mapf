@@ -5,6 +5,8 @@
 //#include <LA-MAPF/algorithm/LA-MAPF/action_dependency_graph.h>
 #include <rclcpp/rclcpp.hpp>
 #include <gazebo_msgs/srv/spawn_entity.hpp>
+#include <gazebo_msgs/srv/set_entity_state.hpp>
+
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -21,14 +23,7 @@ void createCylinderSDFFile(const std::string& model_name, const std::string& fil
     <link name="base_link">
       <pose>0 0 0 0 0 0</pose>
       <static>true</static>
-      <collision name="collision">
-        <geometry>
-          <cylinder>
-            <radius>{radius1}</radius>
-            <length>{height1}</length>
-          </cylinder>
-        </geometry>
-      </collision>
+      <gravity>0</gravity>
       <visual name="visual">
         <geometry>
           <cylinder>
@@ -91,9 +86,9 @@ void createCylinderSDFFile(const std::string& model_name, const std::string& fil
     if (sdf_file.is_open()) {
         sdf_file << sdf_content;
         sdf_file.close();
-        std::cout << "SDF file created with cylinder at: " << file_path << std::endl;
+        // std::cout << "SDF file created with cylinder at: " << file_path << std::endl;
     } else {
-        std::cerr << "Failed to create SDF file at: " << file_path << std::endl;
+        std::cerr << "Failed to create cylinder SDF file at: " << file_path << std::endl;
     }
 }
 
@@ -112,13 +107,7 @@ void createBlockSDFFile(const std::string& model_name, const std::string& file_p
     <link name="base_link">
       <pose>{x} 0 0 0 0 0</pose>
       <static>true</static>
-      <collision name="collision">
-        <geometry>
-          <box>
-            <size>{length1} {width1} {height}</size>
-          </box>
-        </geometry>
-      </collision>
+      <gravity>0</gravity>
       <visual name="visual">
         <geometry>
           <box>
@@ -171,7 +160,7 @@ void createBlockSDFFile(const std::string& model_name, const std::string& file_p
     if (pos != std::string::npos) {
         sdf_content.replace(pos, std::string("{height}").length(), std::to_string(height));
     }
-    // std::cout << " sdf_content = " << sdf_content << std::endl;
+
 
 
     // 设置颜色
@@ -194,9 +183,9 @@ void createBlockSDFFile(const std::string& model_name, const std::string& file_p
     if (sdf_file.is_open()) {
         sdf_file << sdf_content;
         sdf_file.close();
-        std::cout << "SDF file created with cylinder at: " << file_path << std::endl;
+        // std::cout << "SDF file created with box at: " << file_path << std::endl;
     } else {
-        std::cerr << "Failed to create SDF file at: " << file_path << std::endl;
+        std::cerr << "Failed to create box SDF file at: " << file_path << std::endl;
     }
 }
 
@@ -208,7 +197,7 @@ std::string loadSDFFile(const std::string& file_path) {
 }
 
 std::string createCircleAgent(const std::string& model_name, double radius, double height, cv::Vec3b color = cv::Vec3b::all(0)) {
-    std::string file_path = "/tmp/fake_large_agents/" + model_name + ".sdf";
+    std::string file_path = "/home/yaozhuo/Desktop/fake_large_agents/" + model_name + ".sdf";
     createCylinderSDFFile(model_name, file_path, radius, height, color);
     return file_path;
 }
@@ -218,12 +207,14 @@ std::string createBlockAgent(const std::string& model_name,
                              const freeNav::Pointf<2>& pt_max,
                              double height,
                              cv::Vec3b color = cv::Vec3b::all(0)) {
-    std::string file_path = "/tmp/fake_large_agents/" + model_name + ".sdf";
+    std::string file_path = "/home/yaozhuo/Desktop/fake_large_agents/" + model_name + ".sdf";
     createBlockSDFFile(model_name, file_path, pt_min, pt_max, height, color);
     return file_path;
 }
 
 typedef rclcpp::Client<gazebo_msgs::srv::SpawnEntity>::SharedPtr SpawnClientPtr;
+
+typedef rclcpp::Client<gazebo_msgs::srv::SetEntityState>::SharedPtr SetPoseClientPtr;
 
 bool spawnAgentGazebo(const std::string& file_path, const std::string model_name, 
                       const geometry_msgs::msg::Pose& initial_pose, 
@@ -233,6 +224,10 @@ bool spawnAgentGazebo(const std::string& file_path, const std::string model_name
 
     // 读取SDF文件内容
     std::string model_xml = loadSDFFile(file_path);
+
+    // std::cout << " file_path = " << file_path << std::endl;
+    // std::cout << " model_xml = " << model_xml << std::endl;
+
     // 创建SpawnEntity请求
     auto request = std::make_shared<gazebo_msgs::srv::SpawnEntity::Request>();
     request->name = model_name;              // 设置模型名称
@@ -241,24 +236,53 @@ bool spawnAgentGazebo(const std::string& file_path, const std::string model_name
     request->initial_pose = initial_pose;    // 设置模型初始位置
     request->reference_frame = "world";      // 设置参考坐标系
 
-    // 等待服务启动
-    while (!client->wait_for_service(std::chrono::seconds(1))) {
-        if (!rclcpp::ok()) {
-            RCLCPP_ERROR(node->get_logger(), "Interrupted while waiting for the service. Exiting.");
-            return false;
-        }
-        RCLCPP_INFO(node->get_logger(), "Waiting for /spawn_entity service to be available...");
-    }
-
     // 发送请求并等待响应
     auto result = client->async_send_request(request);
     if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
-        RCLCPP_INFO(node->get_logger(), "Successfully spawned model: %s", model_name.c_str());
+        // RCLCPP_INFO(node->get_logger(), "Successfully spawned model: %s", model_name.c_str());
     } else {
         RCLCPP_ERROR(node->get_logger(), "Failed to spawn model: %s", model_name.c_str());
         return false;
     }
     return true;
+}
+
+
+void setModelPose(std::string model_name, double x, double y, double z, double theta, 
+                  const SetPoseClientPtr& client,
+                  const rclcpp::Node::SharedPtr& node) {
+
+    geometry_msgs::msg::Pose pose;
+    pose.position.x = x;
+    pose.position.y = y;
+    pose.position.z = z;
+
+    tf2::Quaternion orientation;
+    orientation.setRPY(0.0, 0.0, theta); // Create this quaternion from roll/pitch/yaw (in radians)
+
+    pose.orientation.x = orientation.x();
+    pose.orientation.y = orientation.y();
+    pose.orientation.z = orientation.z();
+    pose.orientation.w = orientation.w();
+
+    // 创建请求
+    auto request = std::make_shared<gazebo_msgs::srv::SetEntityState::Request>();
+    request->state.name = model_name.c_str();
+    request->state.pose = pose;
+
+    // 异步发送请求
+    auto result_future = client->async_send_request(request);
+
+    // 等待服务响应
+    if (rclcpp::spin_until_future_complete(node->get_node_base_interface(), result_future) ==
+        rclcpp::FutureReturnCode::SUCCESS)
+    {
+        // RCLCPP_INFO(node->get_logger(), "模型 %s 位姿已更新", model_name.c_str());
+    }
+    else
+    {
+        RCLCPP_ERROR(node->get_logger(), "无法更新模型位姿");
+    }
 }
 
 #endif

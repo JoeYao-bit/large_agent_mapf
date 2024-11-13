@@ -28,6 +28,9 @@ find_package(Boost REQUIRED COMPONENTS thread)
 
 find_package(gazebo_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(gazebo_msgs REQUIRED)
+
 include_directories(include 
                     include/large_agent_mapf
                     )
@@ -39,7 +42,7 @@ set(EXTERNAL_LIBS
         ${OpenCV_LIBS}
         )
 
-set(dependencies gazebo_msgs rclcpp)        
+set(dependencies gazebo_msgs rclcpp tf2)        
 
 # uncomment the following section in order to fill in
 # further dependencies manually.

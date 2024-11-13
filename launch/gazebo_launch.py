@@ -63,11 +63,11 @@ from launch.actions import ExecuteProcess
 
 def generate_launch_description():
 
-    world_file_name = 'empty.world' # warehouse.world
+    world_file_name = 'empty.world' # warehouse.world empty.world
     # file_path = /home/yaozhuo/software/gazebo/PLAN-Carrier-Type-4.world
     world = os.path.join('/home/yaozhuo/software/', 'gazebo', world_file_name)
 
-    gazebo = ExecuteProcess(cmd=['gazebo', '--verbose', world, '-s', 'libgazebo_ros_init.so', '-s', 'libgazebo_ros_factory.so'], output='screen')
+    gazebo = ExecuteProcess(cmd=['gazebo', '--verbose', '-s', 'libgazebo_ros_init.so', '-s', 'libgazebo_ros_factory.so', '-s', 'libgazebo_ros_state.so', world], output='screen')
 
     return LaunchDescription([
 
