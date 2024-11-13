@@ -144,3 +144,5 @@ libgazebo_ros_state（set entity state服务需要），不是系统插件，需
 /usr/local/inlcude，/usr/local/lib 本地安装的头文件和库地址
 
 /usr/inlcude，/usr/lib 下载安装的头文件和库地址
+
+TODO： 创建一个服务，如果已经规划完路径，则从头开始演示执行过程

@@ -65,9 +65,9 @@ def generate_launch_description():
 
     world_file_name = 'empty.world' # warehouse.world empty.world
     # file_path = /home/yaozhuo/software/gazebo/PLAN-Carrier-Type-4.world
-    world = os.path.join('/home/yaozhuo/software/', 'gazebo', world_file_name)
+    world = os.path.join('/home/yaozhuo/code/ros2_ws/src/large_agent_mapf', 'world', world_file_name)
 
-    gazebo = ExecuteProcess(cmd=['gazebo', '--verbose', '-s', 'libgazebo_ros_init.so', '-s', 'libgazebo_ros_factory.so', '-s', 'libgazebo_ros_state.so', world], output='screen')
+    gazebo = ExecuteProcess(cmd=['gazebo', '--verbose', '-s', 'libgazebo_ros_init.so', '-s', 'libgazebo_ros_factory.so', world], output='screen')
 
     return LaunchDescription([
 
