@@ -23,16 +23,28 @@ DESTINATION share/${PROJECT_NAME}/
 # find dependencies 
 find_package(ament_cmake REQUIRED)
 find_package(OpenCV REQUIRED)
-
+find_package(builtin_interfaces REQUIRED)
 find_package(Boost REQUIRED COMPONENTS thread)
-
+find_package(std_msgs REQUIRED)
 find_package(gazebo_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(gazebo_msgs REQUIRED)
+# find_package(large_agent_mapf REQUIRED) # 我依赖我自己
+find_package(rosidl_default_generators REQUIRED) # 添加服务
+
+# 声明srv文件所属的工程名字, 文件位置, 依赖DEPENDENCIES
+find_package(rosidl_default_generators REQUIRED)
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/PathExecution.srv"
+  DEPENDENCIES 
+ )
+
+ 
 
 include_directories(include 
                     include/large_agent_mapf
+                    # ${large_agent_mapf_INCLUDE_DIRS}  # 我包括我自己的头文件（install目录下）
                     )
 
 set(EXTERNAL_LIBS
@@ -85,5 +97,5 @@ if(BUILD_TESTING)
   #set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
-
+ament_export_dependencies(rosidl_default_runtime)
 ament_package()

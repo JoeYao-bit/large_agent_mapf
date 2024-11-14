@@ -5,6 +5,7 @@
 #ifndef EXE_COMMON_INTERFACES_H
 #define EXE_COMMON_INTERFACES_H
 #pragma once
+#include "rclcpp/rclcpp.hpp"
 #include <gtest/gtest.h>
 #include <sstream>
 #include <string>
@@ -27,6 +28,11 @@
 #include "freeNav-base/dependencies/memory_analysis.h"
 
 #include <tf2/LinearMath/Quaternion.h>
+// #include "large_agent_mapf/srv/path_execution.hpp" // 存在于install目录但找不到,cmakelist中自己包括自己就找到了
+#include "std_msgs/msg/string.hpp"
+
+//#include "path_execution.hpp"
+using std::placeholders::_1;
 
 using namespace freeNav;
 using namespace freeNav::LayeredMAPF;
@@ -819,5 +825,19 @@ double orientToRadius(const int& orient) {
     }
     return retv;
 }
+
+
+// maintain all poses of current agents, x, y, z, yaw
+extern std::vector<std::vector<double> > allAgentPoses;
+
+extern std::pair<AgentPtrs<2>, InstanceOrients<2> > instances;
+
+const double control_frequency = 0.1;//.033;
+
+double global_offset_x, global_offset_y;
+
+double reso = 0.05;
+
+int sub_count_ = 0;
 
 #endif //LAYEREDMAPF_COMMON_INTERFACES_H

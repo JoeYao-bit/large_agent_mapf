@@ -146,3 +146,19 @@ libgazebo_ros_state（set entity state服务需要），不是系统插件，需
 /usr/inlcude，/usr/lib 下载安装的头文件和库地址
 
 TODO： 创建一个服务，如果已经规划完路径，则从头开始演示执行过程
+
+/-----------自定义服务------------/
+
+https://blog.csdn.net/oXiaoLingTong/article/details/120594951
+
+ ros2中对自定义消息、服务的名字有要求，首字母必须大写，中介不能有下划线等。
+
+ 生成的头文件名字小写间隔加'_'
+
+ PathExecution.src -> path_execution.hpp
+
+ colcon build 才生成hpp
+ colcon build --cmake-args -DCMAKE_CXX_FLAGS="-O3"
+好像不生成hpp
+
+ros2 topic pub --once /init_exe std_msgs/msg/String "{data: haha}"

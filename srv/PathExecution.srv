@@ -1,0 +1,5 @@
+# 是穷人还是富人
+string status
+---
+# 是否成功
+bool success
