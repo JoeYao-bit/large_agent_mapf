@@ -161,4 +161,7 @@ https://blog.csdn.net/oXiaoLingTong/article/details/120594951
  colcon build --cmake-args -DCMAKE_CXX_FLAGS="-O3"
 好像不生成hpp
 
+/--------------------单次发布指令，触发回调函数---------------------/
 ros2 topic pub --once /init_exe std_msgs/msg/String "{data: haha}"
+
+/------------------------------------------------------/

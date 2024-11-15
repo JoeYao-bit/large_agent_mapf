@@ -3,14 +3,11 @@
 
 #include "common_interfaces.h"
 
-
+#include "controller.h"
 #include <gtest/gtest.h>
 #include "common_interfaces.h"
-#include "LA-MAPF/algorithm/LA-MAPF/laryered_large_agent_mapf.h"
-#include "LA-MAPF/algorithm/LA-MAPF/CBS/layered_large_agent_CBS.h"
-#include "LA-MAPF/algorithm/LA-MAPF/CBS/large_agent_CBS.h"
-
 #include "fake_agents.h"
+
 //#include "../../algorithm/LA-MAPF/LaCAM/large_agent_lacam.h"
 
 using namespace freeNav::LayeredMAPF::LA_MAPF;
@@ -37,18 +34,19 @@ private:
         const auto& agent = instances.first[id];
         const auto& start_pt = instances.second[id].first.pt_; 
         auto color = COLOR_TABLE[id%30];
-        double start_theta = orientToRadius(instances.second[id].first.orient_);
 
         geometry_msgs::msg::Pose initial_pose;
 
-        initial_pose.position.x = global_offset_x + reso*start_pt[0];  // 设置模型初始位置
-        initial_pose.position.y = global_offset_y + reso*start_pt[1];
+        Pointf<3> ptf = GridToPtf(start_pt);
+
+        initial_pose.position.x = ptf[0];  // 设置模型初始位置
+        initial_pose.position.y = ptf[1];
         initial_pose.position.z = .15 + sub_count_*0.1;
 
         allAgentPoses[id][0] = initial_pose.position.x;
         allAgentPoses[id][1] = initial_pose.position.y;
         allAgentPoses[id][2] = initial_pose.position.z;
-        allAgentPoses[id][3] = start_theta;
+        allAgentPoses[id][3] = ptf[2];
     }
 
   }
@@ -63,8 +61,8 @@ void updateAllAgentPoseInGazebo(const SetPoseClientPtr& set_pose_clinet,
     for (int id=0; id<instances.first.size(); id++) {
         const auto& agent = instances.first[id];
 
-        double target_x = allAgentPoses[id][0],//global_offset_x + reso*target_pt[0], 
-               target_y = allAgentPoses[id][1],//global_offset_y + reso*target_pt[1], 
+        double target_x = allAgentPoses[id][0],
+               target_y = allAgentPoses[id][1],
                target_z = allAgentPoses[id][2],
                target_theta = allAgentPoses[id][3];
         if(agent->type_ == "Circle") {
@@ -149,8 +147,10 @@ void layeredLargeAgentMAPFTest(const std::string& file_path,
         auto color = COLOR_TABLE[id%30];
         double start_theta = orientToRadius(instances.second[id].first.orient_);
 
-        initial_pose.position.x = global_offset_x + reso*start_pt[0];  // 设置模型初始位置
-        initial_pose.position.y = global_offset_y + reso*start_pt[1];
+        Pointf<3> ptf = GridToPtf(start_pt);
+
+        initial_pose.position.x = ptf[0];  // 设置模型初始位置
+        initial_pose.position.y = ptf[1];
         initial_pose.position.z = .15;
 
         allAgentPoses[id][0] = initial_pose.position.x;
@@ -185,23 +185,7 @@ void layeredLargeAgentMAPFTest(const std::string& file_path,
 
         }
     }
-    // add gridmap to gazebo， as object is too slow, should add them as picture
-    // for(int x=0; x<dim[0]; x++) {
-    //     for(int y=0; y<dim[1]; y++) {
-    //         if(is_occupied({x, y})) {
-    //             // draw occupied grid
-    //             int id = x + y * dim[0];
-    //             std::string file_path3 = createBlockAgent(std::string("grid_")+std::to_string(id), 
-    //                                                     {-0.5*reso, -0.5*reso},
-    //                                                     { 0.5*reso,  0.5*reso}, .1, cv::Vec3b::all(150));
 
-    //             initial_pose.position.x = global_offset_x + reso*x;  // 设置模型初始位置
-    //             initial_pose.position.y = global_offset_y + reso*y;
-
-    //             spawnAgentGazebo(file_path3, std::string("grid_")+std::to_string(id), initial_pose, client, node);
-    //         }
-    //     }
-    // }
     auto layered_paths = layeredLargeAgentMAPF<2>(instances.second,
                                                   instances.first,
                                                   dim, is_occupied,

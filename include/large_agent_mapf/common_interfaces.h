@@ -6,6 +6,7 @@
 #define EXE_COMMON_INTERFACES_H
 #pragma once
 #include "rclcpp/rclcpp.hpp"
+#include <iostream>
 #include <gtest/gtest.h>
 #include <sstream>
 #include <string>
@@ -30,6 +31,7 @@
 #include <tf2/LinearMath/Quaternion.h>
 // #include "large_agent_mapf/srv/path_execution.hpp" // 存在于install目录但找不到,cmakelist中自己包括自己就找到了
 #include "std_msgs/msg/string.hpp"
+
 
 //#include "path_execution.hpp"
 using std::placeholders::_1;
@@ -827,6 +829,7 @@ double orientToRadius(const int& orient) {
 }
 
 
+
 // maintain all poses of current agents, x, y, z, yaw
 extern std::vector<std::vector<double> > allAgentPoses;
 
@@ -839,5 +842,18 @@ double global_offset_x, global_offset_y;
 double reso = 0.05;
 
 int sub_count_ = 0;
+
+Pointf<3> GridToPtf(const Pointi<2>& pt) {
+    Pointf<3> retv = {0, 0, 0};
+    retv[0] = global_offset_x + reso*pt[0];
+    retv[1] = global_offset_y + reso*pt[1];
+    return retv;
+}
+
+Pointf<3> PoseIntToPtf(const PosePtr<int, 2>& pose) {
+    Pointf<3> ptf = GridToPtf(pose->pt_);
+    ptf[2] = orientToRadius(pose->orient_);
+    return ptf;
+}
 
 #endif //LAYEREDMAPF_COMMON_INTERFACES_H
