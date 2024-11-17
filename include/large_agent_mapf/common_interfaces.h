@@ -831,17 +831,25 @@ double orientToRadius(const int& orient) {
 
 
 // maintain all poses of current agents, x, y, z, yaw
-extern std::vector<std::vector<double> > allAgentPoses;
+extern std::vector<Pointf<3> > allAgentPoses;
+
+extern std::vector<Pointf<3> > allAgentVels;
 
 extern std::pair<AgentPtrs<2>, InstanceOrients<2> > instances;
 
-const double control_frequency = 0.1;//.033;
+const double control_frequency = 10;//.033;
 
 double global_offset_x, global_offset_y;
 
 double reso = 0.05;
 
 int sub_count_ = 0;
+
+float agent_height = 0.15;
+
+struct CenteralController;
+
+extern CenteralController* ctl;
 
 Pointf<3> GridToPtf(const Pointi<2>& pt) {
     Pointf<3> retv = {0, 0, 0};

@@ -70,6 +70,10 @@
             return action_status_[getActionId(path_id, t)] == LEAVE;
         }
 
+        bool isActionValid(int path_id, int t) const {
+            return isActionValid(getActionId(path_id, t));
+        }
+
         /*******************************************************/
         void setActionProcessing(int action_id) {
             action_status_[action_id] = PROCESSING;
@@ -113,11 +117,15 @@
             return true;
         }
 
+        void clearAllProgress() {
+            action_status_.resize(agents_.size(), UNVISITED);
+        }
+
 //    private:
 
         const std::vector<LAMAPF_Path>& paths_;
         const std::vector<AgentPtr<N> >& agents_;
-        const std::vector<PosePtr<int, N> >& all_poses_;
+        std::vector<PosePtr<int, N> > all_poses_;
 
         std::vector<std::vector<int> > path_index_to_node_;
         std::vector<std::vector<int> > ADG_; // insert all edge of action dependency graph

@@ -12,6 +12,8 @@
 
 using namespace freeNav::LayeredMAPF::LA_MAPF;
 
+CenteralController* ctl = nullptr;
+
 
 class InitExecutionSubscriber : public rclcpp::Node
 {
@@ -27,9 +29,11 @@ private:
 
   void topic_callback(const std_msgs::msg::String::SharedPtr msg) const
   {
-    RCLCPP_INFO(this->get_logger(), "I heard: '%s'", msg->data.c_str());
+    RCLCPP_INFO(this->get_logger(), "I heard: '%s', reset controller progress", msg->data.c_str());
     sub_count_ ++;
-
+    if(ctl != nullptr) {
+        ctl->clearAllProgress();
+    }
     for (int id=0; id<instances.first.size(); id++) {
         const auto& agent = instances.first[id];
         const auto& start_pt = instances.second[id].first.pt_; 
@@ -41,12 +45,11 @@ private:
 
         initial_pose.position.x = ptf[0];  // 设置模型初始位置
         initial_pose.position.y = ptf[1];
-        initial_pose.position.z = .15 + sub_count_*0.1;
+        initial_pose.position.z = agent_height + sub_count_*0.1;
 
         allAgentPoses[id][0] = initial_pose.position.x;
         allAgentPoses[id][1] = initial_pose.position.y;
-        allAgentPoses[id][2] = initial_pose.position.z;
-        allAgentPoses[id][3] = ptf[2];
+        allAgentPoses[id][2] = ptf[2];
     }
 
   }
@@ -63,8 +66,8 @@ void updateAllAgentPoseInGazebo(const SetPoseClientPtr& set_pose_clinet,
 
         double target_x = allAgentPoses[id][0],
                target_y = allAgentPoses[id][1],
-               target_z = allAgentPoses[id][2],
-               target_theta = allAgentPoses[id][3];
+               target_z = agent_height,
+               target_theta = allAgentPoses[id][2];
         if(agent->type_ == "Circle") {
 
             setModelPose(std::string("Circle_")+std::to_string(agent->id_), target_x, target_y, target_z, target_theta, set_pose_clinet, node);
@@ -138,7 +141,8 @@ void layeredLargeAgentMAPFTest(const std::string& file_path,
 
     spawnAgentGazebo(file_path3, std::string("ground"), initial_pose, client, node);
 
-    allAgentPoses.resize(instances.second.size(), {0,0,0,0}); // x, y, yaw
+    allAgentPoses.resize(instances.second.size(), {0,0,0}); // x, y, yaw
+    allAgentVels.resize(instances.second.size(), {0,0,0}); // x, y, yaw
 
     // add agent to gazebo
     for (int id=0; id<instances.first.size(); id++) {
@@ -155,8 +159,7 @@ void layeredLargeAgentMAPFTest(const std::string& file_path,
 
         allAgentPoses[id][0] = initial_pose.position.x;
         allAgentPoses[id][1] = initial_pose.position.y;
-        allAgentPoses[id][2] = initial_pose.position.z;
-        allAgentPoses[id][3] = start_theta;
+        allAgentPoses[id][2] = start_theta;
 
         tf2::Quaternion orientation;
         orientation.setRPY(0.0, 0.0, start_theta); // Create this quaternion from roll/pitch/yaw (in radians)
@@ -202,16 +205,49 @@ void layeredLargeAgentMAPFTest(const std::string& file_path,
               << " layered large agent mapf in " << time_cost << "s " << std::endl;
     std::cout << std::endl;
 
-    rclcpp::WallRate loop_rate(1/control_frequency);
+    rclcpp::WallRate loop_rate(control_frequency);
+
+    std::vector<LineFollowControllerPtr> line_ctls(instances.first.size(), std::make_shared<ConstantLineFollowController>(MotionConfig()));
+    std::vector<RotateControllerPtr> rot_ctls(instances.first.size(), std::make_shared<ConstantRotateController>(MotionConfig()));
+
+    std::cout << "decomposer_ptr->getAllPoses().size() = " << decomposer_ptr->getAllPoses().size() << std::endl;
+
+    ctl = new CenteralController(layered_paths, instances.first, decomposer_ptr->getAllPoses(), line_ctls, rot_ctls);
 
 
+    // InstanceVisualization(instances.front().first, decomposer_ptr->getAllPoses(),
+    //                        instances.front().second, layered_paths, grid_visit_count_table);
+
+    // start a indenpendent thread to visualize all path
+    // std::thread canvas_thread(InstanceVisualization, instances.first, decomposer_ptr->getAllPoses(),
+    //                        instances.second, layered_paths, grid_visit_count_table);        
+
+    // canvas_thread.detach();
+    
     while (rclcpp::ok())
-    {
+    {   
+        // std::cout << "flag 1" << std::endl;
+        RCLCPP_INFO(node->get_logger(), "control loop");
+
+        Pointfs<3> new_vels = ctl->calculateCMD(allAgentPoses, allAgentVels, 1/control_frequency);
+        // std::cout << "flag 2" << std::endl;
+
+        for(int i=0; i<instances.first.size(); i++) {
+            allAgentPoses[i] = updateAgentPose(allAgentPoses[i], new_vels[i], 1/control_frequency);
+            // break;
+        }
+        // std::cout << "flag 3" << std::endl;
+
         updateAllAgentPoseInGazebo(set_pose_clinet, node);
+        // std::cout << "flag 4" << std::endl;
+
+        allAgentVels = new_vels;
 
         rclcpp::spin_some(init_exe_sub);
         loop_rate.sleep();
     }
+
+    delete ctl;
 
     // TODO: set all agent to target
 
@@ -233,9 +269,11 @@ void layeredLargeAgentMAPFTest(const std::string& file_path,
     //                       instances.front().second, layered_paths, grid_visit_count_table);
 }
 
-std::vector<std::vector<double> > allAgentPoses;
+std::vector<Pointf<3> > allAgentPoses;
+std::vector<Pointf<3> > allAgentVels;
 
 std::pair<AgentPtrs<2>, InstanceOrients<2> >  instances;
+
 
 int main(int argc, char ** argv) {
 
